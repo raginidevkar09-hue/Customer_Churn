@@ -1,39 +1,28 @@
 import joblib
 import pandas as pd
 
-MODEL_PATH = "models/churn_model.pkl"
-SCALER_PATH = "models/scaler.pkl"
-GEO_PATH = "models/le_geography.pkl"
-GENDER_PATH = "models/le_gender.pkl"
+MODEL_PATH = "backend/models/churn_model.pkl"
 
-model = joblib.load(MODEL_PATH)
-scaler = joblib.load(SCALER_PATH)
-le_geo = joblib.load(GEO_PATH)
-le_gender = joblib.load(GENDER_PATH)
+def load_model():
+    return joblib.load(MODEL_PATH)
 
-FEATURE_ORDER = [
-    "CreditScore", "Geography", "Gender", "Age", "Tenure",
-    "Balance", "NumOfProducts", "HasCrCard",
-    "IsActiveMember", "EstimatedSalary"
-]
+def predict_churn_logic(data):
+    model = load_model()
 
-def preprocess_input(data: dict):
-    df = pd.DataFrame([data])
+    df = pd.DataFrame([{
+        "Age": data.Age,
+        "Gender": data.Gender,
+        "Balance": data.Balance,
+        "Tenure": data.Tenure,
+        "CreditScore": data.CreditScore,
+        "NumOfProducts": data.NumOfProducts,
+        "IsActiveMember": data.IsActiveMember
+    }])
 
-    df["Geography"] = le_geo.transform(df["Geography"])
-    df["Gender"] = le_gender.transform(df["Gender"])
-
-    df = df[FEATURE_ORDER]
-    scaled = scaler.transform(df)
-
-    return scaled
-
-def predict_churn(data: dict):
-    processed = preprocess_input(data)
-    prediction = model.predict(processed)[0]
-    probability = model.predict_proba(processed)[0][1]
+    pred = model.predict(df)[0]
+    prob = model.predict_proba(df)[0][1]
 
     return {
-        "churn_prediction": int(prediction),
-        "churn_probability": round(float(probability), 3)
+        "churn_prediction": int(pred),
+        "churn_probability": round(float(prob), 3)
     }
